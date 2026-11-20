@@ -104,18 +104,22 @@ class LLMService:
         intern_entries: List[str] = []
         edu_entries: List[str] = []
 
-        seen_entries = set()
+        seen_keys: Set[str] = set()
 
         for i, l in enumerate(lines):
             if "|" in l and i + 1 < len(lines):
-                next_l = lines[i + 1]
+                next_l = lines[i + 1].strip()
                 if re.search(r"(?:202\d|201\d|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)", next_l):
-                    key = l.lower()
-                    if key in seen_entries:
+                    # Canonical normalized key for bullet deduplication
+                    canonical_key = re.sub(r"[^a-zA-Z0-9]", "", l.lower())
+                    if canonical_key in seen_keys:
                         continue
-                    seen_entries.add(key)
+                    seen_keys.add(canonical_key)
 
-                    entry = f"- **{l}** ({next_l})"
+                    clean_title = re.sub(r"\s+", " ", l).strip()
+                    clean_date = re.sub(r"\s+", " ", next_l).strip()
+                    entry = f"- **{clean_title}** ({clean_date})"
+
                     if any(w in l for w in ["Intern", "ISRO", "Chakradhara", "Internship"]):
                         intern_entries.append(entry)
                     elif any(w in l for w in ["B.E", "B.Tech", "Degree", "College", "University"]):
@@ -129,8 +133,8 @@ class LLMService:
         if wants_education or (wants_summary and (edu_entries or "EDUCATION" in full_context)):
             if edu_entries:
                 output_sections.append(
-                    f"### Education & Background {edu_cite}\n" +
-                    "\n".join(edu_entries) + f" {edu_cite}"
+                    f"### Education & Academic Background {edu_cite}\n\n" +
+                    "\n".join(edu_entries)
                 )
             else:
                 edu_match = re.search(
@@ -139,24 +143,24 @@ class LLMService:
                     re.DOTALL | re.IGNORECASE,
                 )
                 if edu_match:
-                    clean_lines = list(dict.fromkeys([l.strip() for l in edu_match.group(1).split("\n") if l.strip()]))
+                    clean_lines = list(dict.fromkeys([re.sub(r'\s+', ' ', l).strip() for l in edu_match.group(1).split("\n") if l.strip()]))
                     output_sections.append(
-                        f"### Education & Background {edu_cite}\n" +
-                        "\n".join([f"- {cl}" for cl in clean_lines[:3]]) + f" {edu_cite}"
+                        f"### Education & Academic Background {edu_cite}\n\n" +
+                        "\n".join([f"- {cl}" for cl in clean_lines[:3]])
                     )
 
         # --- WORK EXPERIENCE ---
         if wants_experience or (wants_summary and (work_entries or "EXPERIENCE" in full_context)):
             if work_entries:
                 output_sections.append(
-                    f"### Professional Work Experience {exp_cite}\n" +
-                    "\n".join(work_entries[:5]) + f" {exp_cite}"
+                    f"### Professional Work Experience {exp_cite}\n\n" +
+                    "\n".join(work_entries[:5])
                 )
 
             if intern_entries:
                 output_sections.append(
-                    f"### Internships & Research {edu_cite}\n" +
-                    "\n".join(intern_entries[:3]) + f" {edu_cite}"
+                    f"### Internships & Research {edu_cite}\n\n" +
+                    "\n".join(intern_entries[:3])
                 )
 
         # --- SKILLS ---
@@ -167,10 +171,10 @@ class LLMService:
                 re.DOTALL | re.IGNORECASE,
             )
             if skills_match:
-                skills_lines = list(dict.fromkeys([l.strip() for l in skills_match.group(1).split("\n") if l.strip()]))
+                skills_lines = list(dict.fromkeys([re.sub(r'\s+', ' ', l).strip() for l in skills_match.group(1).split("\n") if l.strip()]))
                 output_sections.append(
-                    f"### Technical Stack & Competencies {skill_cite}\n" +
-                    "\n".join([f"- {s}" for s in skills_lines[:3]]) + f" {skill_cite}"
+                    f"### Technical Stack & Competencies {skill_cite}\n\n" +
+                    "\n".join([f"- {s}" for s in skills_lines[:3]])
                 )
 
         if not output_sections:
