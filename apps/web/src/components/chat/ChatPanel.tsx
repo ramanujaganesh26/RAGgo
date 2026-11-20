@@ -1,64 +1,28 @@
 import React, { useState } from "react";
-import { ChatMessage, Citation } from "@/types";
+import { Citation } from "@/types";
 import { Button } from "../common/Button";
 import { CitationCard } from "./CitationCard";
-import { Send, CornerDownLeft, ShieldCheck } from "lucide-react";
+import { Send, ShieldCheck, Square } from "lucide-react";
+import { useStreamingChat } from "@/hooks/useStreamingChat";
 
 interface ChatPanelProps {
   selectedCollectionName: string;
+  selectedCollectionId?: string;
+  onCitationClick?: (citation: Citation) => void;
 }
 
-export const ChatPanel: React.FC<ChatPanelProps> = ({ selectedCollectionName }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "msg-init",
-      sender: "assistant",
-      content: `Knowledge workspace ready. Ask questions grounded in ${selectedCollectionName}. Citations map directly to source passages.`,
-      timestamp: new Date().toLocaleTimeString(),
-    },
-  ]);
+export const ChatPanel: React.FC<ChatPanelProps> = ({
+  selectedCollectionName,
+  selectedCollectionId = "col-default",
+  onCitationClick,
+}) => {
+  const { messages, isStreaming, sendMessage, stopGeneration } = useStreamingChat(selectedCollectionId);
   const [input, setInput] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isSubmitting) return;
-
-    const userMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender: "user",
-      content: input,
-      timestamp: new Date().toLocaleTimeString(),
-    };
-
-    const assistantMsg: ChatMessage = {
-      id: `msg-resp-${Date.now()}`,
-      sender: "assistant",
-      content:
-        "The RAG architecture utilizes DeepDoc layout models for table extraction and Infinity for multi-vector hybrid search [1]. Ingestion stages stream in real time via Server-Sent Events [2].",
-      timestamp: new Date().toLocaleTimeString(),
-      citations: [
-        {
-          citation_id: 1,
-          document_id: "doc-001",
-          document_name: "ARCHITECTURE.md",
-          page_number: 1,
-          snippet: "The platform is designed around a three-tier decoupled architecture: Enterprise Client, Application Gateway, and Foundational Ingestion Tier.",
-          relevance_score: 0.96,
-        },
-        {
-          citation_id: 2,
-          document_id: "doc-002",
-          document_name: "DEVELOPMENT_ROADMAP.md",
-          page_number: 2,
-          snippet: "Status display covers all lifecycle stages: Validating -> Parsing -> OCR -> Chunking -> Indexing -> Completed.",
-          relevance_score: 0.91,
-        },
-      ],
-    };
-
-    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+    if (!input.trim() || isStreaming) return;
+    sendMessage(input);
     setInput("");
   };
 
@@ -89,7 +53,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ selectedCollectionName }) 
                   : "bg-surface-subtle text-foreground border border-border"
               }`}
             >
-              <p>{msg.content}</p>
+              <p className="whitespace-pre-wrap">{msg.content}</p>
+
+              {msg.streaming && (
+                <span className="inline-block w-1.5 h-3.5 bg-primary ml-1 animate-pulse align-middle" />
+              )}
 
               {/* Citations section */}
               {msg.citations && msg.citations.length > 0 && (
@@ -102,7 +70,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ selectedCollectionName }) 
                       <CitationCard
                         key={c.citation_id}
                         citation={c}
-                        onSelect={(cit) => setActiveCitation(cit)}
+                        onSelect={(cit) => onCitationClick?.(cit)}
                       />
                     ))}
                   </div>
@@ -114,21 +82,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ selectedCollectionName }) 
         ))}
       </div>
 
-      {/* Selected Citation Drawer Preview */}
-      {activeCitation && (
-        <div className="p-3 bg-muted/60 border-t border-border flex items-start justify-between text-xs">
-          <div>
-            <span className="font-semibold text-foreground">
-              Source [{activeCitation.citation_id}] &middot; {activeCitation.document_name}
-            </span>
-            <p className="text-muted-foreground mt-0.5">&ldquo;{activeCitation.snippet}&rdquo;</p>
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => setActiveCitation(null)}>
-            Dismiss
-          </Button>
-        </div>
-      )}
-
       {/* Input box */}
       <form onSubmit={handleSubmit} className="p-3 border-t border-border bg-surface">
         <div className="flex items-center gap-2">
@@ -137,12 +90,26 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ selectedCollectionName }) 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask a question across indexed documents..."
-            className="flex-1 h-9 px-3 text-xs bg-surface-subtle border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary text-foreground placeholder:text-muted-foreground"
+            disabled={isStreaming}
+            className="flex-1 h-9 px-3 text-xs bg-surface-subtle border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary text-foreground placeholder:text-muted-foreground disabled:opacity-60"
           />
-          <Button type="submit" size="sm" disabled={!input.trim() || isSubmitting}>
-            <Send className="h-3.5 w-3.5 mr-1.5" />
-            Send
-          </Button>
+          {isStreaming ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={stopGeneration}
+              title="Stop Generation"
+            >
+              <Square className="h-3 w-3 mr-1 fill-current text-status-error" />
+              Stop
+            </Button>
+          ) : (
+            <Button type="submit" size="sm" disabled={!input.trim()}>
+              <Send className="h-3.5 w-3.5 mr-1.5" />
+              Send
+            </Button>
+          )}
         </div>
       </form>
     </div>
