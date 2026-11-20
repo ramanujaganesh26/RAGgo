@@ -44,7 +44,7 @@ class LLMService:
             yield "No indexed documents were found in this collection. Please upload your document(s) first to ask questions."
             return
 
-        # 1. Attempt Cloud Gemini API if GEMINI_API_KEY is available
+        # 1. Cloud Gemini API when key is configured
         gemini_key = os.getenv("GEMINI_API_KEY") or self.gemini_key
         if gemini_key:
             try:
@@ -77,7 +77,7 @@ class LLMService:
             except Exception:
                 pass  # Fall through to local intelligent synthesizer
 
-        # 2. Local Context-Aware Grounded Synthesizer
+        # 2. Local Context-Aware Grounded Synthesizer with Strict Deduplication
         full_context = "\n\n".join([p.get("full_content", p["snippet"]) for p in passages])
         query_lower = query.lower()
 
@@ -86,20 +86,35 @@ class LLMService:
         wants_skills = any(w in query_lower for w in ["skill", "skills", "tech", "technologies", "stack", "tools", "c++", "qt"])
         wants_summary = any(w in query_lower for w in ["summary", "summarize", "overview", "who is", "understand", "about"]) or (not wants_education and not wants_experience and not wants_skills)
 
-        cite_nums = [p["citation_id"] for p in passages]
-        c1 = f"[{cite_nums[0]}]"
-        c2 = f"[{cite_nums[1]}]" if len(cite_nums) > 1 else c1
+        # Map citation ids
+        doc_names = list(dict.fromkeys([p["document_name"] for p in passages]))
+        primary_doc = doc_names[0] if doc_names else "Document"
 
-        # Extract structured items from context lines
+        cite_map: Dict[str, int] = {}
+        for p in passages:
+            first_word = p["snippet"].split()[0].upper() if p["snippet"].split() else ""
+            cite_map[first_word] = p["citation_id"]
+
+        edu_cite = f"[{cite_map.get('EDUCATION', passages[-1]['citation_id'])}]"
+        exp_cite = f"[{cite_map.get('PROFESSIONAL', passages[0]['citation_id'])}]"
+        skill_cite = f"[{cite_map.get('SKILLS', passages[0]['citation_id'])}]"
+
         lines = [l.strip() for l in full_context.split("\n") if l.strip()]
-        work_entries = []
-        intern_entries = []
-        edu_entries = []
+        work_entries: List[str] = []
+        intern_entries: List[str] = []
+        edu_entries: List[str] = []
+
+        seen_entries = set()
 
         for i, l in enumerate(lines):
             if "|" in l and i + 1 < len(lines):
                 next_l = lines[i + 1]
                 if re.search(r"(?:202\d|201\d|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)", next_l):
+                    key = l.lower()
+                    if key in seen_entries:
+                        continue
+                    seen_entries.add(key)
+
                     entry = f"- **{l}** ({next_l})"
                     if any(w in l for w in ["Intern", "ISRO", "Chakradhara", "Internship"]):
                         intern_entries.append(entry)
@@ -114,8 +129,8 @@ class LLMService:
         if wants_education or (wants_summary and (edu_entries or "EDUCATION" in full_context)):
             if edu_entries:
                 output_sections.append(
-                    f"### Education & Where They Studied {c2}\n" +
-                    "\n".join(edu_entries) + f" {c2}"
+                    f"### Education & Background {edu_cite}\n" +
+                    "\n".join(edu_entries) + f" {edu_cite}"
                 )
             else:
                 edu_match = re.search(
@@ -124,24 +139,24 @@ class LLMService:
                     re.DOTALL | re.IGNORECASE,
                 )
                 if edu_match:
-                    clean_lines = [l.strip() for l in edu_match.group(1).split("\n") if l.strip()]
+                    clean_lines = list(dict.fromkeys([l.strip() for l in edu_match.group(1).split("\n") if l.strip()]))
                     output_sections.append(
-                        f"### Education & Where They Studied {c2}\n" +
-                        "\n".join([f"- {cl}" for cl in clean_lines[:3]]) + f" {c2}"
+                        f"### Education & Background {edu_cite}\n" +
+                        "\n".join([f"- {cl}" for cl in clean_lines[:3]]) + f" {edu_cite}"
                     )
 
         # --- WORK EXPERIENCE ---
         if wants_experience or (wants_summary and (work_entries or "EXPERIENCE" in full_context)):
             if work_entries:
                 output_sections.append(
-                    f"### Professional Work Experience {c1}\n" +
-                    "\n".join(work_entries) + f" {c1}"
+                    f"### Professional Work Experience {exp_cite}\n" +
+                    "\n".join(work_entries[:5]) + f" {exp_cite}"
                 )
 
             if intern_entries:
                 output_sections.append(
-                    f"### Internships {c2}\n" +
-                    "\n".join(intern_entries) + f" {c2}"
+                    f"### Internships & Research {edu_cite}\n" +
+                    "\n".join(intern_entries[:3]) + f" {edu_cite}"
                 )
 
         # --- SKILLS ---
@@ -152,17 +167,17 @@ class LLMService:
                 re.DOTALL | re.IGNORECASE,
             )
             if skills_match:
-                skills_lines = [l.strip() for l in skills_match.group(1).split("\n") if l.strip()]
+                skills_lines = list(dict.fromkeys([l.strip() for l in skills_match.group(1).split("\n") if l.strip()]))
                 output_sections.append(
-                    f"### Technical Skills & Stack {c1}\n" +
-                    "\n".join([f"- {s}" for s in skills_lines[:3]]) + f" {c1}"
+                    f"### Technical Stack & Competencies {skill_cite}\n" +
+                    "\n".join([f"- {s}" for s in skills_lines[:3]]) + f" {skill_cite}"
                 )
 
         if not output_sections:
             for p in passages[:3]:
-                output_sections.append(f"- **From {p['document_name']}** (p. {p.get('page_number', 1)}): {p['snippet']} [{p['citation_id']}]")
+                output_sections.append(f"- **From {p['document_name']}** (Page {p.get('page_number', 1)}): {p['snippet']} [{p['citation_id']}]")
 
-        final_answer = "\n\n".join(output_sections) + "\n\n*All information above is verified and extracted from the uploaded document passages.*"
+        final_answer = "\n\n".join(output_sections)
 
         for word in final_answer.split(" "):
             yield word + " "
