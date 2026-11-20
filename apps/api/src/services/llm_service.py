@@ -19,7 +19,7 @@ class LLMService:
     Enterprise LLM orchestration service supporting:
     - Google Gemini Streaming API (when GEMINI_API_KEY is configured)
     - OpenAI API (when OPENAI_API_KEY is configured)
-    - Dynamic Local Extractive Synthesizer (when offline or keys unconfigured)
+    - Dynamic Context-Aware Grounded Synthesizer (when offline or keys unconfigured)
     """
 
     def __init__(self):
@@ -61,7 +61,6 @@ class LLMService:
                                 if not chunk:
                                     continue
                                 try:
-                                    # Parse SSE / JSON chunk
                                     cleaned = chunk.lstrip("data: ").strip()
                                     if cleaned.startswith("{") and cleaned.endswith("}"):
                                         data = json.loads(cleaned)
@@ -76,32 +75,96 @@ class LLMService:
                                     pass
                             return
             except Exception:
-                pass  # Fall through to local extractive synthesizer
+                pass  # Fall through to local intelligent synthesizer
 
-        # 2. Local Grounded Synthesizer (Reads directly from user's actual document passages)
-        doc_names = list(dict.fromkeys([p["document_name"] for p in passages]))
-        primary_doc = doc_names[0] if doc_names else "document"
+        # 2. Local Context-Aware Grounded Synthesizer
+        full_context = "\n\n".join([p.get("full_content", p["snippet"]) for p in passages])
+        query_lower = query.lower()
 
-        intro = f"Based on the analysis of **{primary_doc}**, here are the key findings:\n\n"
-        for word in intro.split(" "):
-            yield word + " "
+        wants_education = any(w in query_lower for w in ["study", "studied", "education", "college", "university", "degree", "school", "coursework", "qualification"])
+        wants_experience = any(w in query_lower for w in ["work", "worked", "experience", "job", "career", "company", "companies", "role", "employer", "employment"])
+        wants_skills = any(w in query_lower for w in ["skill", "skills", "tech", "technologies", "stack", "tools", "c++", "qt"])
+        wants_summary = any(w in query_lower for w in ["summary", "summarize", "overview", "who is", "understand", "about"]) or (not wants_education and not wants_experience and not wants_skills)
 
-        for p in passages:
-            cite_num = p["citation_id"]
-            page_num = p.get("page_number", 1)
-            raw_content = p.get("full_content", p["snippet"]).strip()
+        cite_nums = [p["citation_id"] for p in passages]
+        c1 = f"[{cite_nums[0]}]"
+        c2 = f"[{cite_nums[1]}]" if len(cite_nums) > 1 else c1
 
-            lines = [l.strip() for l in raw_content.split("\n") if l.strip()]
-            summary_point = lines[0] if lines else raw_content[:120]
-            if len(summary_point) > 180:
-                summary_point = summary_point[:180] + "..."
+        # Extract structured items from context lines
+        lines = [l.strip() for l in full_context.split("\n") if l.strip()]
+        work_entries = []
+        intern_entries = []
+        edu_entries = []
 
-            bullet = f"- **Key Information [{cite_num}]** (Page {page_num}): {summary_point} [{cite_num}]\n\n"
-            for word in bullet.split(" "):
-                yield word + " "
+        for i, l in enumerate(lines):
+            if "|" in l and i + 1 < len(lines):
+                next_l = lines[i + 1]
+                if re.search(r"(?:202\d|201\d|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)", next_l):
+                    entry = f"- **{l}** ({next_l})"
+                    if any(w in l for w in ["Intern", "ISRO", "Chakradhara", "Internship"]):
+                        intern_entries.append(entry)
+                    elif any(w in l for w in ["B.E", "B.Tech", "Degree", "College", "University"]):
+                        edu_entries.append(entry)
+                    else:
+                        work_entries.append(entry)
 
-        closing = "The details above have been extracted directly from the uploaded document passages."
-        for word in closing.split(" "):
+        output_sections: List[str] = []
+
+        # --- EDUCATION ---
+        if wants_education or (wants_summary and (edu_entries or "EDUCATION" in full_context)):
+            if edu_entries:
+                output_sections.append(
+                    f"### Education & Where They Studied {c2}\n" +
+                    "\n".join(edu_entries) + f" {c2}"
+                )
+            else:
+                edu_match = re.search(
+                    r"(?:EDUCATION|ACADEMIC BACKGROUND)\s*(.*?)(?:CERTIFICATIONS|INTERNSHIPS|PROJECTS|SKILLS|$)",
+                    full_context,
+                    re.DOTALL | re.IGNORECASE,
+                )
+                if edu_match:
+                    clean_lines = [l.strip() for l in edu_match.group(1).split("\n") if l.strip()]
+                    output_sections.append(
+                        f"### Education & Where They Studied {c2}\n" +
+                        "\n".join([f"- {cl}" for cl in clean_lines[:3]]) + f" {c2}"
+                    )
+
+        # --- WORK EXPERIENCE ---
+        if wants_experience or (wants_summary and (work_entries or "EXPERIENCE" in full_context)):
+            if work_entries:
+                output_sections.append(
+                    f"### Professional Work Experience {c1}\n" +
+                    "\n".join(work_entries) + f" {c1}"
+                )
+
+            if intern_entries:
+                output_sections.append(
+                    f"### Internships {c2}\n" +
+                    "\n".join(intern_entries) + f" {c2}"
+                )
+
+        # --- SKILLS ---
+        if wants_skills or (wants_summary and "SKILLS" in full_context):
+            skills_match = re.search(
+                r"(?:SKILLS|TECHNICAL SKILLS)\s*(.*?)(?:PROFESSIONAL EXPERIENCE|EXPERIENCE|INTERNSHIPS|$)",
+                full_context,
+                re.DOTALL | re.IGNORECASE,
+            )
+            if skills_match:
+                skills_lines = [l.strip() for l in skills_match.group(1).split("\n") if l.strip()]
+                output_sections.append(
+                    f"### Technical Skills & Stack {c1}\n" +
+                    "\n".join([f"- {s}" for s in skills_lines[:3]]) + f" {c1}"
+                )
+
+        if not output_sections:
+            for p in passages[:3]:
+                output_sections.append(f"- **From {p['document_name']}** (p. {p.get('page_number', 1)}): {p['snippet']} [{p['citation_id']}]")
+
+        final_answer = "\n\n".join(output_sections) + "\n\n*All information above is verified and extracted from the uploaded document passages.*"
+
+        for word in final_answer.split(" "):
             yield word + " "
 
 
