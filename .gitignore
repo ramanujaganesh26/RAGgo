@@ -1,0 +1,38 @@
+# Environment variables & API keys
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.secret
+*secrets*
+*credentials*
+*apikey*
+*api_key*
+*token*
+
+# Personal / local files
+personal/
+private/
+local/
+*.local
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python / Node / Build artifacts
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+dist/
+build/
+*.log
