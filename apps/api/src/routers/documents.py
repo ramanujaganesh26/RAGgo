@@ -1,4 +1,5 @@
 import asyncio
+import os
 import json
 import uuid
 from datetime import datetime, timezone
@@ -7,11 +8,16 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from fastapi.responses import StreamingResponse
 from ..core.security import log_audit_event, verify_api_key
 from ..models.schemas import DocumentMetadata, DocumentResponse, IngestionStage
+from ..services.document_parser import document_parser
+from ..services.retrieval_service import retrieval_service
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
 # In-memory document store
 DOCUMENTS_STORE: Dict[str, DocumentResponse] = {}
+
+UPLOAD_DIR = os.path.join(os.getcwd(), "data", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 @router.get("", response_model=List[DocumentResponse])
@@ -32,18 +38,9 @@ async def upload_document(
     api_key: str = Depends(verify_api_key),
 ):
     """
-    Accepts document upload and registers it in the multi-stage ingestion queue.
-    Validates MIME type, formats, and payload boundaries.
+    Accepts document upload, extracts actual text and pages via DocumentParser,
+    generates semantic chunks, and registers them in the RetrievalService index.
     """
-    allowed_types = {
-        "application/pdf",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "text/plain",
-        "text/markdown",
-        "text/csv",
-    }
-
     content_type = file.content_type or "application/octet-stream"
     filename = file.filename or "unnamed_document"
 
@@ -51,12 +48,31 @@ async def upload_document(
     now = datetime.now(timezone.utc)
     doc_id = str(uuid.uuid4())
 
+    # Save physical file to disk
+    file_path = os.path.join(UPLOAD_DIR, f"{doc_id}_{filename}")
+    try:
+        with open(file_path, "wb") as f:
+            f.write(content)
+    except Exception:
+        pass
+
+    # Extract actual text & pages
+    pages = document_parser.extract_text_and_pages(content, filename, content_type)
+    page_count = max(1, len(pages))
+
+    # Generate semantic chunks
+    chunks = document_parser.chunk_document(pages, doc_id, filename)
+    chunk_count = len(chunks)
+
+    # Index chunks in retrieval engine
+    retrieval_service.index_chunks(collection_id, chunks)
+
     meta = DocumentMetadata(
         filename=filename,
         file_type=content_type,
         file_size_bytes=len(content),
-        page_count=None,
-        chunk_count=0,
+        page_count=page_count,
+        chunk_count=chunk_count,
     )
 
     doc = DocumentResponse(
@@ -77,7 +93,13 @@ async def upload_document(
         action="DOCUMENT_UPLOAD",
         resource_type="DOCUMENT",
         resource_id=doc_id,
-        details={"filename": filename, "size_bytes": len(content), "collection_id": collection_id},
+        details={
+            "filename": filename,
+            "size_bytes": len(content),
+            "collection_id": collection_id,
+            "pages": page_count,
+            "chunks": chunk_count,
+        },
     )
 
     return doc
@@ -100,11 +122,12 @@ async def stream_document_stages(
     api_key: str = Depends(verify_api_key),
 ):
     """
-    Server-Sent Events (SSE) stream reporting real-time document ingestion lifecycle stages:
-    Validating -> Parsing -> OCR -> Chunking -> Indexing -> Completed.
+    Server-Sent Events (SSE) stream reporting real-time document ingestion lifecycle stages.
     """
     if document_id not in DOCUMENTS_STORE:
         raise HTTPException(status_code=404, detail="Document not found")
+
+    target_doc = DOCUMENTS_STORE[document_id]
 
     async def event_generator():
         stages = [
@@ -117,14 +140,11 @@ async def stream_document_stages(
         ]
 
         for stage, progress, detail in stages:
-            await asyncio.sleep(0.4)
+            await asyncio.sleep(0.3)
             if document_id in DOCUMENTS_STORE:
                 DOCUMENTS_STORE[document_id].stage = stage
                 DOCUMENTS_STORE[document_id].progress_percentage = progress
                 DOCUMENTS_STORE[document_id].updated_at = datetime.now(timezone.utc)
-                if stage == IngestionStage.COMPLETED:
-                    DOCUMENTS_STORE[document_id].metadata.page_count = 14
-                    DOCUMENTS_STORE[document_id].metadata.chunk_count = 48
 
             event_data = {
                 "document_id": document_id,
@@ -167,7 +187,9 @@ async def delete_document(
     """Delete a document and purge its vector embeddings."""
     if document_id not in DOCUMENTS_STORE:
         raise HTTPException(status_code=404, detail="Document not found")
+
     del DOCUMENTS_STORE[document_id]
+    retrieval_service.remove_document_chunks(document_id)
 
     log_audit_event(
         action="DOCUMENT_DELETE",

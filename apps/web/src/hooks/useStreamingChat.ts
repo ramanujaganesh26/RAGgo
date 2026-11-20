@@ -39,7 +39,8 @@ export const useStreamingChat = (collectionId: string) => {
     abortControllerRef.current = new AbortController();
 
     try {
-      const response = await fetch("/api/v1/chat/completions", {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
+      const response = await fetch(`${apiBase}/chat/completions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -106,19 +107,8 @@ export const useStreamingChat = (collectionId: string) => {
             msg.id === assistantId
               ? {
                   ...msg,
-                  content:
-                    "The system processes documents across multi-stage lifecycles with DeepDoc layout detection and hybrid Infinity search [1].",
-                  citations: [
-                    {
-                      citation_id: 1,
-                      document_id: "doc-arch-001",
-                      document_name: "ARCHITECTURE.md",
-                      page_number: 1,
-                      snippet:
-                        "The platform is designed around a three-tier decoupled architecture: Enterprise Client, Application Gateway, and Foundational Ingestion Tier.",
-                      relevance_score: 0.95,
-                    },
-                  ],
+                  content: `Unable to retrieve answer: ${err.message || "Communication error with Application Gateway."}`,
+                  citations: [],
                   streaming: false,
                 }
               : msg

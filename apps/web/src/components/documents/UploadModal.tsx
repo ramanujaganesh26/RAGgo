@@ -49,7 +49,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         formData.append("collection_id", collectionId);
         formData.append("file", file);
 
-        const res = await fetch("/api/v1/documents/upload", {
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
+        const res = await fetch(`${apiBase}/documents/upload`, {
           method: "POST",
           body: formData,
         });

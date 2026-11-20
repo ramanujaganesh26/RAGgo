@@ -91,9 +91,21 @@ def test_document_upload_and_lifecycle():
 
 
 def test_chat_non_streaming():
+    # Create collection and upload document first
+    col_res = client.post(
+        "/api/v1/collections",
+        json={"name": "Architecture Knowledge", "parsing_template": "general"},
+    )
+    col_id = col_res.json()["id"]
+
+    file_content = b"The platform architecture is designed around a three-tier decoupled system with DeepDoc parsing."
+    files = {"file": ("architecture.txt", file_content, "text/plain")}
+    data = {"collection_id": col_id}
+    client.post("/api/v1/documents/upload", data=data, files=files)
+
     payload = {
         "query": "What is the system architecture?",
-        "collection_ids": ["col-001"],
+        "collection_ids": [col_id],
         "top_k": 3,
         "stream": False,
     }

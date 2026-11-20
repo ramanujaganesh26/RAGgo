@@ -13,8 +13,9 @@ export const useDocumentStages = (
     if (processingDocs.length === 0) return;
 
     // Monitor the latest active document via Server-Sent Events
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
     const targetDoc = processingDocs[0];
-    const eventSource = new EventSource(`/api/v1/documents/${targetDoc.id}/stages`);
+    const eventSource = new EventSource(`${apiBase}/documents/${targetDoc.id}/stages`);
 
     eventSource.onmessage = (event) => {
       try {

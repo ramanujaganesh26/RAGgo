@@ -17,6 +17,7 @@
 personal/
 private/
 local/
+data/
 *.local
 
 # OS & Editor files
