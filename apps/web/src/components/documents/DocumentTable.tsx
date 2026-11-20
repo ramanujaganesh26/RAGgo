@@ -1,7 +1,7 @@
 import React from "react";
 import { DocumentItem } from "@/types";
 import { StageIndicator } from "./StageIndicator";
-import { FileText, FileSpreadsheet, RotateCcw, Trash2, Eye, CheckCircle2 } from "lucide-react";
+import { FileText, RotateCcw, Trash2 } from "lucide-react";
 
 interface DocumentTableProps {
   documents: DocumentItem[];
@@ -24,118 +24,82 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
   };
 
-  const getFileBadge = (filename: string) => {
-    const ext = filename.split(".").pop()?.toLowerCase();
-    if (ext === "pdf") {
-      return (
-        <div className="h-7 w-7 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0">
-          <FileText className="h-4 w-4" />
-        </div>
-      );
-    }
-    if (ext === "xlsx" || ext === "csv") {
-      return (
-        <div className="h-7 w-7 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shrink-0">
-          <FileSpreadsheet className="h-4 w-4" />
-        </div>
-      );
-    }
-    return (
-      <div className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shrink-0">
-        <FileText className="h-4 w-4" />
-      </div>
-    );
-  };
-
   if (documents.length === 0) {
     return (
-      <div className="text-center py-16 border border-dashed border-border/80 rounded-xl bg-surface-subtle/50">
-        <FileText className="mx-auto h-9 w-9 text-muted-foreground/60 stroke-1" />
-        <h4 className="mt-2.5 text-sm font-semibold text-foreground">No documents in this collection</h4>
-        <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-          Upload PDF, DOCX, or Excel documents to begin visual layout analysis and vector indexing.
+      <div className="text-center py-14 border border-zinc-200 rounded-lg bg-zinc-50/50">
+        <FileText className="mx-auto h-7 w-7 text-zinc-400 stroke-1" />
+        <h4 className="mt-2 text-xs font-medium text-zinc-900">No documents found</h4>
+        <p className="mt-0.5 text-xs text-zinc-500 max-w-sm mx-auto">
+          Upload PDF, DOCX, or text files to index them into this collection.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden border border-border/80 rounded-xl bg-surface shadow-2xs">
+    <div className="border border-zinc-200 rounded-lg bg-white overflow-hidden shadow-2xs">
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="bg-surface-subtle/80 border-b border-border text-muted-foreground font-medium text-[11px] uppercase tracking-wider">
-              <th className="py-3 px-4 font-semibold">Document</th>
-              <th className="py-3 px-3 font-semibold">Size</th>
-              <th className="py-3 px-3 font-semibold text-center">Pages</th>
-              <th className="py-3 px-3 font-semibold text-center">Chunks</th>
-              <th className="py-3 px-4 font-semibold min-w-[140px]">Pipeline Stage</th>
-              <th className="py-3 px-4 text-right font-semibold">Actions</th>
+            <tr className="border-b border-zinc-200 bg-zinc-50/70 text-zinc-500 font-medium text-[11px]">
+              <th className="py-2.5 px-3.5 font-medium">Name</th>
+              <th className="py-2.5 px-3 font-medium">Size</th>
+              <th className="py-2.5 px-3 font-medium text-center">Chunks</th>
+              <th className="py-2.5 px-3 font-medium">Status</th>
+              <th className="py-2.5 px-3 text-right font-medium">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border/60">
+          <tbody className="divide-y divide-zinc-100">
             {documents.map((doc) => (
               <tr
                 key={doc.id}
-                className="hover:bg-surface-subtle/60 transition-colors group"
+                className="hover:bg-zinc-50/80 transition-colors group"
               >
-                {/* Document Name and Metadata */}
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-3">
-                    {getFileBadge(doc.filename)}
-                    <div className="min-w-0 max-w-[260px]">
-                      <div
-                        className="font-medium text-foreground truncate text-xs cursor-pointer hover:text-primary transition-colors"
-                        title={doc.filename}
-                        onClick={() => onViewSource?.(doc)}
-                      >
-                        {doc.filename}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
-                        DeepDoc Segmented
-                      </div>
-                    </div>
+                {/* Document Name */}
+                <td className="py-2.5 px-3.5">
+                  <div className="flex items-center gap-2.5">
+                    <FileText className="h-4 w-4 text-zinc-400 shrink-0" />
+                    <span
+                      className="font-medium text-zinc-900 truncate max-w-[240px] cursor-pointer hover:underline"
+                      title={doc.filename}
+                      onClick={() => onViewSource?.(doc)}
+                    >
+                      {doc.filename}
+                    </span>
                   </div>
                 </td>
 
                 {/* File Size */}
-                <td className="py-3 px-3 text-muted-foreground font-mono text-[11px]">
+                <td className="py-2.5 px-3 text-zinc-500 font-mono text-[11px]">
                   {formatBytes(doc.file_size_bytes)}
                 </td>
 
-                {/* Pages */}
-                <td className="py-3 px-3 text-muted-foreground font-mono text-center text-[11px]">
-                  {doc.metadata.page_count ?? "1"}
-                </td>
-
                 {/* Chunks */}
-                <td className="py-3 px-3 text-muted-foreground font-mono text-center text-[11px]">
-                  <span className="px-1.5 py-0.5 rounded bg-surface-subtle border border-border">
-                    {doc.metadata.chunk_count}
-                  </span>
+                <td className="py-2.5 px-3 text-zinc-600 font-mono text-center text-[11px]">
+                  {doc.metadata.chunk_count}
                 </td>
 
-                {/* Processing Stage */}
-                <td className="py-3 px-4">
+                {/* Status Indicator */}
+                <td className="py-2.5 px-3">
                   <StageIndicator stage={doc.stage} progress={doc.progress_percentage} />
                 </td>
 
                 {/* Actions */}
-                <td className="py-3 px-4 text-right">
-                  <div className="inline-flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                <td className="py-2.5 px-3 text-right">
+                  <div className="inline-flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => onReprocess(doc.id)}
-                      className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                      title="Reprocess Pipeline"
+                      className="p-1 rounded hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 transition-colors"
+                      title="Reprocess"
                     >
-                      <RotateCcw className="h-3.5 w-3.5" />
+                      <RotateCcw className="h-3 w-3" />
                     </button>
                     <button
                       onClick={() => onDelete(doc.id)}
-                      className="p-1.5 rounded-md hover:bg-rose-50 text-muted-foreground hover:text-rose-600 transition-colors"
-                      title="Remove from Collection"
+                      className="p-1 rounded hover:bg-zinc-100 text-zinc-400 hover:text-rose-600 transition-colors"
+                      title="Delete"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
                 </td>

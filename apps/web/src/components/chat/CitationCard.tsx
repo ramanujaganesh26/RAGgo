@@ -11,39 +11,34 @@ export const CitationCard: React.FC<CitationCardProps> = ({ citation, onSelect }
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="group border border-border/80 rounded-lg bg-surface hover:border-primary/50 transition-all text-xs overflow-hidden shadow-2xs">
-      {/* Top Header Row */}
+    <div className="border border-zinc-200 rounded-md bg-white text-xs overflow-hidden">
+      {/* Header Row */}
       <div
         onClick={() => onSelect?.(citation)}
-        className="p-2 flex items-center justify-between cursor-pointer hover:bg-surface-subtle/50 transition-colors"
+        className="px-2.5 py-1.5 flex items-center justify-between cursor-pointer hover:bg-zinc-50 transition-colors"
       >
         <div className="flex items-center gap-2 truncate max-w-[210px]">
-          <span className="inline-flex items-center justify-center h-4 w-4 rounded bg-primary/10 text-primary font-mono text-[10px] font-bold shrink-0">
-            {citation.citation_id}
+          <span className="font-mono text-[10px] text-zinc-500 font-semibold shrink-0">
+            [{citation.citation_id}]
           </span>
-          <FileText className="h-3.5 w-3.5 text-muted-foreground/80 shrink-0" />
-          <span className="truncate font-medium text-[11px] text-foreground">
+          <FileText className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+          <span className="truncate text-[11px] text-zinc-800 font-medium">
             {citation.document_name}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 text-[10px] font-mono text-zinc-400">
           {citation.page_number && (
-            <span className="text-[10px] font-mono text-muted-foreground bg-surface-subtle border border-border px-1.5 py-0.2 rounded">
-              p.{citation.page_number}
-            </span>
+            <span>p.{citation.page_number}</span>
           )}
-          <span className="text-[10px] font-mono font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
-            {(citation.relevance_score * 100).toFixed(0)}%
-          </span>
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               setExpanded(!expanded);
             }}
-            className="p-0.5 rounded hover:bg-muted text-muted-foreground transition-colors"
-            title={expanded ? "Hide snippet" : "Preview snippet"}
+            className="p-0.5 rounded hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 transition-colors"
+            title={expanded ? "Hide snippet" : "Show snippet"}
           >
             {expanded ? (
               <ChevronUp className="h-3 w-3" />
@@ -54,19 +49,19 @@ export const CitationCard: React.FC<CitationCardProps> = ({ citation, onSelect }
         </div>
       </div>
 
-      {/* Expandable Evidence Snippet */}
+      {/* Expandable Snippet */}
       {expanded && (
-        <div className="px-2.5 pb-2 pt-1 border-t border-border/50 bg-surface-subtle/30">
-          <p className="text-muted-foreground text-[11px] leading-relaxed italic font-sans select-text">
+        <div className="px-2.5 py-2 border-t border-zinc-100 bg-zinc-50/60">
+          <p className="text-zinc-600 text-[11px] leading-relaxed italic select-text">
             &ldquo;{citation.snippet}&rdquo;
           </p>
-          <div className="mt-1.5 flex justify-end">
+          <div className="mt-1 flex justify-end">
             <button
               onClick={() => onSelect?.(citation)}
-              className="text-[10px] font-medium text-primary hover:underline inline-flex items-center gap-0.5"
+              className="text-[10px] text-zinc-500 hover:text-zinc-900 inline-flex items-center gap-0.5"
             >
-              Open in Document Viewer
-              <ArrowUpRight className="h-3 w-3" />
+              View Document
+              <ArrowUpRight className="h-2.5 w-2.5" />
             </button>
           </div>
         </div>

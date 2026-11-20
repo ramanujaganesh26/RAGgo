@@ -28,8 +28,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
                 e.stopPropagation();
                 onCitationClick?.(num);
               }}
-              title={`View Evidence Citation [${num}]`}
-              className="inline-flex items-center justify-center h-4 px-1.5 mx-0.5 text-[10px] font-mono font-medium text-primary bg-primary/10 hover:bg-primary hover:text-white rounded border border-primary/25 transition-all align-middle cursor-pointer shadow-2xs"
+              title={`View Source Citation [${num}]`}
+              className="inline-flex items-center font-mono text-[10px] text-zinc-600 bg-zinc-100 hover:bg-zinc-200 hover:text-zinc-900 border border-zinc-200/80 rounded px-1 py-0.2 mx-0.5 align-baseline cursor-pointer transition-colors"
             >
               [{num}]
             </button>
@@ -51,48 +51,46 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   };
 
   return (
-    <div className="text-xs leading-relaxed text-foreground space-y-3 font-sans">
+    <div className="text-xs leading-relaxed text-zinc-800 space-y-2 font-sans select-text">
       <ReactMarkdown
         components={{
           h3: ({ children }) => (
-            <div className="flex items-center gap-2 font-semibold text-[13px] text-foreground tracking-tight pt-2.5 pb-1 border-b border-border/70 my-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-              <div className="flex items-center gap-1.5">
-                {React.Children.map(children, processNode)}
-              </div>
+            <div className="font-semibold text-xs text-zinc-900 tracking-tight pt-2 pb-0.5 mt-2 mb-1">
+              {React.Children.map(children, processNode)}
             </div>
           ),
           h4: ({ children }) => (
-            <h4 className="font-semibold text-xs text-foreground mt-2 mb-1 flex items-center gap-1">
+            <div className="font-medium text-xs text-zinc-900 mt-1.5 mb-0.5">
               {React.Children.map(children, processNode)}
-            </h4>
+            </div>
           ),
           p: ({ children }) => (
-            <p className="my-1.5 leading-relaxed text-foreground/90">
+            <p className="my-1 text-zinc-700 leading-relaxed">
               {React.Children.map(children, processNode)}
             </p>
           ),
-          ul: ({ children }) => <ul className="space-y-1.5 my-2 pl-1">{children}</ul>,
+          ul: ({ children }) => (
+            <ul className="list-disc pl-4 space-y-1 my-1.5 text-zinc-700">
+              {children}
+            </ul>
+          ),
           li: ({ children }) => (
-            <li className="flex items-start gap-2 text-xs leading-snug">
-              <span className="text-primary font-bold select-none text-[10px] mt-0.5">•</span>
-              <div className="flex-1">
-                {React.Children.map(children, processNode)}
-              </div>
+            <li className="text-xs leading-relaxed">
+              {React.Children.map(children, processNode)}
             </li>
           ),
           strong: ({ children }) => (
-            <strong className="font-semibold text-foreground">
+            <strong className="font-medium text-zinc-900">
               {React.Children.map(children, processNode)}
             </strong>
           ),
           em: ({ children }) => (
-            <em className="text-muted-foreground italic">
+            <em className="text-zinc-500 italic">
               {React.Children.map(children, processNode)}
             </em>
           ),
           code: ({ children }) => (
-            <code className="px-1.5 py-0.5 rounded bg-muted text-[11px] font-mono text-primary font-medium border border-border">
+            <code className="px-1 py-0.2 rounded bg-zinc-100 text-[11px] font-mono text-zinc-800 border border-zinc-200">
               {children}
             </code>
           ),

@@ -1,14 +1,13 @@
 import React from "react";
 import {
+  FileText,
   FolderGit2,
-  MessageSquareText,
+  MessageSquare,
   Activity,
   Layers,
-  FileText,
-  Server,
-  ShieldCheck,
   ChevronRight,
-  Sparkles,
+  Database,
+  Sliders,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -25,55 +24,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const mainNav = [
     {
       id: "documents" as const,
-      label: "Knowledge Collections",
-      icon: FolderGit2,
-      badge: `${documentCount} docs`,
+      label: "Documents & Files",
+      icon: FileText,
+      badge: `${documentCount}`,
     },
     {
       id: "chat" as const,
-      label: "Multi-Document Chat",
-      icon: MessageSquareText,
-      badge: "Grounded",
+      label: "Query Assistant",
+      icon: MessageSquare,
+      badge: null,
     },
     {
       id: "observability" as const,
-      label: "Ingestion Pipelines",
+      label: "Ingestion Telemetry",
       icon: Activity,
-      badge: "Active",
-      pulse: true,
+      badge: "Live",
     },
   ];
 
   return (
-    <aside className="w-64 border-r border-border bg-surface-subtle p-3 flex flex-col justify-between shrink-0 select-none">
+    <aside className="w-60 border-r border-zinc-200 bg-zinc-50/60 p-3 flex flex-col justify-between shrink-0 select-none">
       <div className="space-y-4">
         {/* Workspace Organization Switcher */}
-        <div className="px-2 pt-1">
-          <div className="flex items-center justify-between p-2 rounded-lg bg-surface border border-border shadow-2xs hover:border-border/80 transition-all cursor-pointer">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="h-6 w-6 rounded bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-                <Layers className="h-3.5 w-3.5" />
+        <div className="px-1">
+          <div className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-white border border-zinc-200 shadow-2xs hover:border-zinc-300 transition-colors cursor-pointer">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="h-5 w-5 rounded bg-zinc-100 border border-zinc-200 text-zinc-700 flex items-center justify-center font-semibold text-[10px] shrink-0">
+                <Layers className="h-3 w-3" />
               </div>
               <div className="truncate">
-                <div className="text-xs font-semibold text-foreground truncate">
-                  Enterprise Core
-                </div>
-                <div className="text-[10px] text-muted-foreground font-mono">
-                  Production RAG
+                <div className="text-xs font-medium text-zinc-900 truncate">
+                  Corporate Policies
                 </div>
               </div>
             </div>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <ChevronRight className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
           </div>
         </div>
 
         {/* Navigation Sections */}
         <div className="space-y-1">
-          <div className="px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Intelligence Workspace
+          <div className="px-2.5 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+            Workspace
           </div>
 
-          <nav className="space-y-1 mt-1">
+          <nav className="space-y-0.5 mt-1">
             {mainNav.map((item) => {
               const Icon = item.icon;
               const isActive = currentTab === item.id;
@@ -81,103 +76,79 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   key={item.id}
                   onClick={() => onTabChange(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all group ${
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
                     isActive
-                      ? "bg-surface text-primary border border-border/80 shadow-xs"
-                      : "text-muted-foreground hover:bg-surface hover:text-foreground"
+                      ? "bg-white text-zinc-900 border border-zinc-200/80 shadow-2xs"
+                      : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2">
                     <Icon
-                      className={`h-4 w-4 shrink-0 transition-colors ${
-                        isActive
-                          ? "text-primary"
-                          : "text-muted-foreground group-hover:text-foreground"
+                      className={`h-3.5 w-3.5 shrink-0 ${
+                        isActive ? "text-zinc-900" : "text-zinc-400"
                       }`}
                     />
-                    <span className="tracking-tight">{item.label}</span>
+                    <span className="truncate">{item.label}</span>
                   </div>
 
-                  <span
-                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full flex items-center gap-1 ${
-                      isActive
-                        ? "bg-primary/10 text-primary font-semibold"
-                        : "bg-muted text-muted-foreground group-hover:bg-muted/80"
-                    }`}
-                  >
-                    {item.pulse && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    )}
-                    {item.badge}
-                  </span>
+                  {item.badge && (
+                    <span
+                      className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
+                        isActive
+                          ? "bg-zinc-100 text-zinc-900 font-semibold"
+                          : "text-zinc-400"
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
           </nav>
         </div>
 
-        {/* Enterprise Guardrails & Evals */}
+        {/* Collections Overview */}
         <div className="space-y-1 pt-1">
-          <div className="px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Verification & Compliance
+          <div className="px-2.5 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+            Active Collections
           </div>
-          <div className="px-3 py-2 space-y-2">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                <span>Grounding Score</span>
-              </span>
-              <span className="font-mono font-semibold text-emerald-600 text-[11px]">
-                98.4%
-              </span>
+          <div className="px-2.5 space-y-1 text-xs">
+            <div className="flex items-center justify-between py-1 text-zinc-700">
+              <span className="truncate">Corporate Policies</span>
+              <span className="text-[10px] font-mono text-zinc-400">Default</span>
             </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <span>Layout Parser</span>
-              </span>
-              <span className="font-mono text-[11px] text-foreground font-medium">
-                DeepDoc OCR
-              </span>
+            <div className="flex items-center justify-between py-1 text-zinc-500 hover:text-zinc-700 cursor-pointer">
+              <span className="truncate">Financial Statements Q3</span>
+              <span className="text-[10px] font-mono text-zinc-400">1 doc</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Engine Telemetry Bottom Card */}
-      <div className="space-y-2 pt-2">
-        <div className="p-3 border border-border/80 rounded-xl bg-surface shadow-2xs space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground">
-              <Server className="h-3.5 w-3.5 text-primary" />
-              <span>RAGgo Engine</span>
-            </div>
-            <span className="h-2 w-2 rounded-full bg-emerald-500" title="Online" />
-          </div>
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Decoupled hybrid pipeline with Infinity Vector DB and DeepDoc table layout analysis.
-          </p>
-          <div className="pt-1 border-t border-border/60 flex items-center justify-between text-[10px] text-muted-foreground font-mono">
-            <span>Latency: 0.58ms</span>
-            <span className="text-emerald-600 font-medium">100% Grounded</span>
-          </div>
+      {/* Footer System & Profile Status */}
+      <div className="space-y-2 pt-2 border-t border-zinc-200/70">
+        <div className="px-2 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+          <span className="flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+            <span>Gateway 8000</span>
+          </span>
+          <span className="text-zinc-400">v1.0.0</span>
         </div>
 
         {/* User Card */}
-        <div className="px-2 py-1.5 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2 truncate">
-            <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-slate-700 to-slate-900 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+        <div className="px-2 py-1 flex items-center justify-between text-xs rounded-md bg-white border border-zinc-200/70">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-5 w-5 rounded-full bg-zinc-800 text-white flex items-center justify-center font-medium text-[9px] shrink-0">
               RG
             </div>
             <div className="truncate">
-              <div className="font-medium text-foreground text-[11px] truncate">
+              <div className="font-medium text-zinc-900 text-[11px] truncate">
                 Ramanuja Ganesh
-              </div>
-              <div className="text-[10px] text-muted-foreground truncate font-mono">
-                Admin
               </div>
             </div>
           </div>
+          <span className="text-[10px] font-mono text-zinc-400">Admin</span>
         </div>
       </div>
     </aside>
