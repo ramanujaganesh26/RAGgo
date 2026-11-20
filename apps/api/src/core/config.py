@@ -5,7 +5,7 @@ from typing import List
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    app_name: str = "AegisDoc Intelligence API"
+    app_name: str = "RAGgo Enterprise API"
     app_version: str = "1.0.0"
     app_env: str = "development"
     debug: bool = True

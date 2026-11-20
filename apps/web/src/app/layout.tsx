@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AegisDoc Intelligence | Enterprise Multi-Document RAG",
-  description: "Enterprise Multi-Document RAG Platform with deep document layout parsing",
+  title: "RAGgo | Enterprise Multi-Document Grounded RAG",
+  description: "Enterprise Multi-Document RAG Engine with DeepDoc visual layout parsing and hybrid vector retrieval",
 };
 
 export default function RootLayout({
@@ -13,7 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
-      <body className="h-full bg-surface text-foreground antialiased flex flex-col">
+      <body className="h-full bg-surface text-foreground antialiased flex flex-col font-sans">
         {children}
       </body>
     </html>

@@ -1,6 +1,6 @@
 import React from "react";
 import { IngestionStage } from "@/types";
-import { Badge } from "../common/Badge";
+import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
 interface StageIndicatorProps {
   stage: IngestionStage;
@@ -8,47 +8,59 @@ interface StageIndicatorProps {
 }
 
 export const StageIndicator: React.FC<StageIndicatorProps> = ({ stage, progress }) => {
-  const getStageMeta = (stage: IngestionStage) => {
-    switch (stage) {
-      case "completed":
-        return { label: "Indexed", variant: "success" as const };
-      case "failed":
-        return { label: "Failed", variant: "error" as const };
+  if (stage === "completed") {
+    return (
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        <span>Indexed</span>
+      </div>
+    );
+  }
+
+  if (stage === "failed") {
+    return (
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
+        <AlertCircle className="h-3 w-3 text-rose-500" />
+        <span>Failed</span>
+      </div>
+    );
+  }
+
+  const getStageLabel = (st: IngestionStage) => {
+    switch (st) {
       case "parsing":
-        return { label: "DeepDoc Parsing", variant: "info" as const };
+        return "DeepDoc Parsing";
       case "ocr":
-        return { label: "OCR Recognition", variant: "info" as const };
+        return "OCR Recognition";
       case "chunking":
-        return { label: "Chunking", variant: "info" as const };
+        return "Chunking";
       case "indexing":
-        return { label: "Vector Indexing", variant: "info" as const };
+        return "Vector Indexing";
       case "validating":
-        return { label: "Validating", variant: "warning" as const };
+        return "Validating";
       case "uploading":
       case "uploaded":
-        return { label: "Uploading", variant: "warning" as const };
-      case "pending":
+        return "Uploading";
       default:
-        return { label: "Pending", variant: "neutral" as const };
+        return "Processing";
     }
   };
 
-  const meta = getStageMeta(stage);
-
   return (
-    <div className="flex flex-col gap-1 min-w-[120px]">
-      <div className="flex items-center justify-between text-xs">
-        <Badge variant={meta.variant}>{meta.label}</Badge>
-        <span className="text-[11px] font-mono text-muted-foreground">{progress}%</span>
+    <div className="flex flex-col gap-1 min-w-[130px]">
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="font-medium text-blue-700 flex items-center gap-1.5">
+          <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
+          {getStageLabel(stage)}
+        </span>
+        <span className="font-mono text-muted-foreground">{progress}%</span>
       </div>
-      {stage !== "completed" && stage !== "failed" && (
-        <div className="w-full bg-muted rounded-full h-1 overflow-hidden">
-          <div
-            className="bg-primary h-1 rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      )}
+      <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+        <div
+          className="bg-blue-600 h-1 rounded-full transition-all duration-300"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
     </div>
   );
 };
