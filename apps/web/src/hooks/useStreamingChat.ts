@@ -58,6 +58,7 @@ export const useStreamingChat = (collectionId: string) => {
 
       const decoder = new TextDecoder();
       let buffer = "";
+      let accumulatedText = "";
 
       while (true) {
         const { value, done } = await reader.read();
@@ -73,10 +74,11 @@ export const useStreamingChat = (collectionId: string) => {
             try {
               const payload = JSON.parse(dataStr);
               if (payload.token) {
+                accumulatedText += payload.token;
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg.id === assistantId
-                      ? { ...msg, content: msg.content + payload.token }
+                      ? { ...msg, content: accumulatedText }
                       : msg
                   )
                 );

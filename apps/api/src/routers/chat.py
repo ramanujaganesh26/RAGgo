@@ -52,7 +52,7 @@ async def chat_query(
                 return
 
             async for token in llm_service.generate_grounded_stream(request.query, passages):
-                await asyncio.sleep(0.03)
+                await asyncio.sleep(0.008)
                 yield f"data: {json.dumps({'token': token})}\n\n"
 
             # Format citation metadata for client inspection

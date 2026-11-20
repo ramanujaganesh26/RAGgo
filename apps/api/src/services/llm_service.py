@@ -179,8 +179,10 @@ class LLMService:
 
         final_answer = "\n\n".join(output_sections)
 
-        for word in final_answer.split(" "):
-            yield word + " "
+        words = final_answer.split(" ")
+        batch_size = 2
+        for i in range(0, len(words), batch_size):
+            yield " ".join(words[i : i + batch_size]) + " "
 
 
 llm_service = LLMService()
